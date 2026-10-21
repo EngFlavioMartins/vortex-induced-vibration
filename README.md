@@ -1,65 +1,58 @@
 # Vortex-induced vibration
 
-**Vortex-induced vibration of an elastically mounted cylinder in OpenFOAM.**
+**An elastically mounted cylinder shaking in its own wake, in OpenFOAM.**
 
-![Vortex cores shed alternately behind an elastically mounted cylinder, coloured by spanwise vorticity, over a plane of the same vorticity](docs/assets/render.webp)
+![Vortex cores shed alternately behind an elastically mounted cylinder, coloured by spanwise vorticity](docs/assets/render.webp)
 
-OpenFOAM case generator for vortex-induced vibration (VIV) of an elastically mounted rigid cylinder free to move in the cross-flow direction. It follows the set-up of
+One script writes a complete OpenFOAM case for a cylinder on a spring and damper, free to move across the flow, with the set-up of the papers below. The original simulations used ANSYS Fluent and are not available; this is a re-implementation for OpenFOAM v2412 (openfoam.com).
 
-> F. A. C. Martins and J. P. J. Avila (2019). Three-dimensional CFD analysis of damping effects on vortex-induced vibrations of 2DOF elastically-mounted circular cylinders. *Marine Structures* 65, 12–31. [doi:10.1016/j.marstruc.2019.01.005](https://doi.org/10.1016/j.marstruc.2019.01.005)
-
-and the companion study of Reynolds-number and damping effects:
-
-> F. A. C. Martins and J. P. J. Avila (2019). Effects of the Reynolds number and structural damping on vortex-induced vibrations of an elastically-mounted rigid cylinder. *International Journal of Mechanical Sciences* 156, 235–249. [doi:10.1016/j.ijmecsci.2019.03.024](https://doi.org/10.1016/j.ijmecsci.2019.03.024)
-
-The original simulations used ANSYS Fluent and are not available. This repository is a re-implementation in OpenFOAM v2412 (openfoam.com).
-
-## Set-up
-
-The defaults are taken from the Marine Structures paper:
-
-- **Cylinder:** D = 0.05 m, span πD, mass ratio m* = 2.4, spring stiffness k = 29.15 N/m.
-- **Natural frequency:** f<sub>n</sub> = 1 Hz in vacuum, 0.84 Hz in water with C<sub>A</sub> = 1.
-- **Flow model:** URANS with k–ω SST.
-- **Domain:** 32D × 24D, with the cylinder 12D from the inlet and symmetry on the far-field boundaries.
-- **Time step:** T<sub>n,w</sub>/200.
-
-The cylinder moves with OpenFOAM's `sixDoFRigidBodyMotion`. It is constrained to cross-flow translation and held by a linear spring and damper with c = 2ζ√(km). The mesh near the cylinder moves rigidly, and the deformation is absorbed between 1.5D and 10D from it.
-
-The mesh is an O-grid made with `blockMesh`: 144 cells around the cylinder and about 18 600 cells in the plane. That is coarser than the paper's. `--two-d` gives one cell across the span; without it the case has 12 cells across the span with symmetry at both ends, as in the paper.
-
-## Quick start
+## Get started
 
 ```bash
-python src/make_case.py runs/vstar7 --vstar 7 --zeta 0.0125 --two-d
-cd runs/vstar7 && ./Allrun        # with OpenFOAM v2412 loaded
-python ../../scripts/response.py .    # cross-flow amplitude and frequency
+git clone https://github.com/EngFlavioMartins/vortex-induced-vibration.git
+cd vortex-induced-vibration
+python src/make_case.py runs/vstar7 --vstar 7 --two-d
+cd runs/vstar7 && ./Allrun
 ```
 
-## Repository guide
+Run `./Allrun` in an OpenFOAM v2412 environment. `--vstar` sets the reduced velocity and `--zeta` the damping ratio. Leave out `--two-d` for the three-dimensional case (much slower). `python scripts/response.py runs/vstar7` reports the amplitude and frequency.
 
-| Location | Purpose |
-| --- | --- |
-| `src/make_case.py` | Writes mesh, dictionaries and initial fields for a given V* and ζ |
-| `scripts/response.py` | Cross-flow amplitude A*<sub>y</sub> and frequency ratio from the run log |
-| `scripts/render/` | Scripts that make the website image (ParaView `pvpython`, cmcrameri, Pillow) |
-
-## Website image
+## Make the figure above
 
 ```bash
-python src/make_case.py runs/vstar7-2d --vstar 7 --zeta 0.0125 --two-d
-cd runs/vstar7-2d && ./Allrun && reconstructPar -time '15:18'
-pvpython ../../scripts/render/render_wake.py . 16.669072 ../../outputs/render/viv-raw.png
-python ../../scripts/render/finish_image.py ../../outputs/render/viv-raw.png ../../outputs/render/vortex-induced-vibration
+reconstructPar -case runs/vstar7 -time '15:18'
+sh scripts/render/make_figure.sh runs/vstar7 16.669072
 ```
 
-The run is two-dimensional, one cell across the span, so the vortex cores are uniform along the cylinder. In this coarse run the cylinder oscillates with A*<sub>y</sub> ≈ 0.66 at f<sub>y</sub>/f<sub>n,w</sub> ≈ 1.44 (`scripts/response.py`). That is below the upper-branch response of the paper's three-dimensional simulations, so treat the run as qualitative.
+You need [ParaView](https://www.paraview.org/download/) (for `pvpython`), a LaTeX installation, and `pip install pyvista pillow`. The figure comes from a coarse two-dimensional run (amplitude 0.66 D): treat it as qualitative, below the upper-branch response of the paper's three-dimensional simulations.
 
-## Citing
+## Cite
 
-This code follows the set-up of F. A. C. Martins and J. P. J. Avila (2019), Three-dimensional CFD analysis of damping effects on vortex-induced vibrations of 2DOF elastically-mounted circular cylinders, *Marine Structures* 65, 12–31, [doi:10.1016/j.marstruc.2019.01.005](https://doi.org/10.1016/j.marstruc.2019.01.005).
+This code follows the set-up of the papers below. If you use it, please cite:
 
-GitHub's *Cite this repository* button uses [CITATION.cff](CITATION.cff).
+```bibtex
+@article{martins2019viv3d,
+  author  = {Martins, Flavio A. C. and Avila, J. P. J.},
+  title   = {Three-Dimensional {CFD} Analysis of Damping Effects on Vortex-Induced Vibrations of {2DOF} Elastically-Mounted Circular Cylinders},
+  journal = {Marine Structures},
+  volume  = {65},
+  pages   = {12--31},
+  year    = {2019},
+  doi     = {10.1016/j.marstruc.2019.01.005}
+}
+
+@article{martins2019vivre,
+  author  = {Martins, Flavio A. C. and Avila, J. P. J.},
+  title   = {Effects of the {Reynolds} Number and Structural Damping on Vortex-Induced Vibrations of an Elastically-Mounted Rigid Cylinder},
+  journal = {International Journal of Mechanical Sciences},
+  volume  = {156},
+  pages   = {235--249},
+  year    = {2019},
+  doi     = {10.1016/j.ijmecsci.2019.03.024}
+}
+```
+
+GitHub's **Cite this repository** button (from [CITATION.cff](CITATION.cff)) gives the same reference in other formats.
 
 ## Licence
 

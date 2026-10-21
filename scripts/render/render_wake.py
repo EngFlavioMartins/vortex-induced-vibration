@@ -1,47 +1,38 @@
-"""ParaView (pvpython) render of the vortex wake behind the elastically mounted cylinder.
+"""ParaView (pvpython) render of the cylinder vortex wake in the OpenONDA style.
 
 Usage: pvpython render_wake.py <case dir> <time> <output png> [width height]
 
-The run is two-dimensional (one cell across the span pi*D), so the Q-criterion
-iso-surfaces are uniform along the cylinder: they show the 2D wake across the
-simulated span. Colour: spanwise vorticity omega_z D / U with Crameri's "vik"
-(blue clockwise, red anticlockwise). A translucent plane at the back of the
-span shows the same vorticity field (from 2D upstream of the cylinder to the outlet, 20D downstream).
+Black background. Q-criterion iso-surfaces (vortex cores) and a plane behind
+the span are coloured by spanwise vorticity omega_z D/U with signed_dark:
+blue clockwise, red anticlockwise, zero fading into the black. The cylinder
+is matte grey. The run is two-dimensional, so the cores are uniform along
+the span.
 """
 import json
 import sys
 from pathlib import Path
 
-from paraview.simple import (CellDatatoPointData, Clip, ColorBy, Contour, ExtractBlock, GetActiveViewOrCreate,
-                             GetColorTransferFunction, Gradient, OpenFOAMReader, Plane, ResampleWithDataset,
-                             SaveScreenshot, Show)
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import onda_style as style  # noqa: E402
+from paraview.simple import (Calculator, CellDatatoPointData, Clip, Contour, ExtractBlock,  # noqa: E402
+                             GetOpacityTransferFunction, Gradient, OpenFOAMReader, Plane, ResampleWithDataset, Show)
 
 case, time, out = Path(sys.argv[1]), float(sys.argv[2]), Path(sys.argv[3])
-width, height = (int(a) for a in (sys.argv[4:6] if len(sys.argv) > 5 else (2400, 1600)))
-HERE = Path(__file__).resolve().parent
-D = 0.05
-SPAN = 3.141592653589793 * D
+width, height = (int(a) for a in (sys.argv[4:6] if len(sys.argv) > 5 else (2400, 1500)))
+D, SPAN = 0.05, 3.141592653589793 * 0.05
 U = json.loads((case / "case.json").read_text())["U"]
-Q_LEVEL = 0.6 * (U / D) ** 2          # Q iso-level, in units of (U/D)^2
-W_RANGE = 3.0                         # colour range of omega_z D / U
-X_RANGE, Y_HALF = (-2 * D, 20 * D), 5 * D   # region shown: from 2D upstream to the outlet
+W_RANGE = 4.0                                   # colour range of omega_z D / U
+Q_LEVEL = 0.6                                   # Q iso-level in units of (U/D)^2
+X_RANGE, Y_HALF = (-2 * D, 20 * D), 5 * D
 (case / "case.foam").touch()
 
 reader = OpenFOAMReader(FileName=str(case / "case.foam"))
 reader.MeshRegions = ["internalMesh", "patch/cylinder"]
 reader.CellArrays = ["U"]
 reader.UpdatePipeline(time)
-
-view = GetActiveViewOrCreate("RenderView")
-view.ViewSize = [width, height]
+view = style.setup_view(width, height)
 view.ViewTime = time
-view.OrientationAxesVisibility = 0
-view.UseColorPaletteForBackground = 0
-view.Background = [1, 1, 1]
-view.EnableRayTracing = 1
-view.BackEnd = "OSPRay raycaster"
-view.SamplesPerPixel = 32
-view.AmbientSamples = 8
 
 fluid = CellDatatoPointData(Input=ExtractBlock(Input=reader, Selectors=["/Root/internalMesh"]))
 grad = Gradient(Input=fluid)
@@ -50,54 +41,37 @@ grad.ComputeQCriterion = 1
 grad.QCriterionArrayName = "Q"
 grad.ComputeVorticity = 1
 grad.VorticityArrayName = "omega"
+nondim = Calculator(Input=grad, ResultArrayName="wz", Function=f"omega_Z*{D / U}")
+qn = Calculator(Input=nondim, ResultArrayName="qn", Function=f"Q*{(D / U) ** 2}")
 
-lut = GetColorTransferFunction("omega")
-lut.RGBPoints = json.loads((HERE / "vik.json").read_text())["vik"]
-lut.ColorSpace = "RGB"
-lut.VectorMode = "Component"
-lut.VectorComponent = 2
-lut.AutomaticRescaleRangeMode = "Never"
+lut = style.lut("wz", "signed_dark", -W_RANGE, W_RANGE)
 
-
-def colour(display, opacity=1.0):
-    ColorBy(display, ("POINTS", "omega", "Z"))
-    display.LookupTable = lut
-    display.SetScalarBarVisibility(view, False)
-    display.Opacity = opacity
-
-
-# vortex cores
-near = Clip(Input=grad, ClipType="Box", Crinkleclip=0)
+near = Clip(Input=qn, ClipType="Box", Crinkleclip=0)
 near.ClipType.Position = [X_RANGE[0], -Y_HALF, -0.01]
 near.ClipType.Length = [X_RANGE[1] - X_RANGE[0], 2 * Y_HALF, SPAN + 0.02]
 near.Invert = 1
-q = Contour(Input=near, ContourBy=["POINTS", "Q"], Isosurfaces=[Q_LEVEL], ComputeScalars=0)
-q.PointMergeMethod = "Uniform Binning"
-d = Show(q, view)
-colour(d)
-d.Specular, d.SpecularPower = 0.35, 30
+cores = Contour(Input=near, ContourBy=["POINTS", "qn"], Isosurfaces=[Q_LEVEL], ComputeScalars=0)
+cores.PointMergeMethod = "Uniform Binning"
+d = Show(cores, view)
+style.mapped(d, "wz", lut, roughness=0.3)
 
-# vorticity on the back of the span, faint
-back = ResampleWithDataset(SourceDataArrays=grad, DestinationMesh=Plane(
-    Origin=[X_RANGE[0], -Y_HALF, 0.002 * SPAN], Point1=[X_RANGE[1], -Y_HALF, 0.002 * SPAN],
-    Point2=[X_RANGE[0], Y_HALF, 0.002 * SPAN], XResolution=900, YResolution=400))
+plane = Plane(Origin=[X_RANGE[0], -Y_HALF, 0.002 * SPAN], Point1=[X_RANGE[1], -Y_HALF, 0.002 * SPAN],
+              Point2=[X_RANGE[0], Y_HALF, 0.002 * SPAN], XResolution=900, YResolution=400)
+back = ResampleWithDataset(SourceDataArrays=nondim, DestinationMesh=plane)
 back.CellLocator = "Static Cell Locator"
 d = Show(back, view)
-colour(d, 0.45)
-d.Ambient, d.Diffuse = 0.4, 0.6
+style.mapped(d, "wz", lut)
+d.Interpolation = "Flat"
+d.Ambient, d.Diffuse = 1.0, 0.0                 # unlit: the field glows
+d.Opacity = 0.85
 
-# cylinder
 cyl = ExtractBlock(Input=reader, Selectors=["/Root/boundary/cylinder"])
-d = Show(cyl, view)
-d.ColorArrayName = ["POINTS", ""]
-d.AmbientColor = d.DiffuseColor = [0.72, 0.74, 0.76]
-d.Specular, d.SpecularPower = 0.6, 40
+style.solid(Show(cyl, view), style.LIGHT_GREY, roughness=0.3)
+lut.RescaleTransferFunction(-W_RANGE, W_RANGE)
 
-lut.RescaleTransferFunction(-W_RANGE * U / D, W_RANGE * U / D)
-
-view.CameraPosition = [-0.62, 0.70, 1.50]
-view.CameraFocalPoint = [0.45, 0.0, SPAN / 2]
+view.CameraPosition = [-0.40, 0.42, 1.04]
+view.CameraFocalPoint = [0.40, -0.03, SPAN / 2]
 view.CameraViewUp = [0, 1, 0]
 view.CameraViewAngle = 30
-SaveScreenshot(str(out), view, ImageResolution=[width, height], TransparentBackground=0)
+style.save(view, out, width, height)
 print(out)
