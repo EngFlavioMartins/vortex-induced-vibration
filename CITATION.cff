@@ -5,6 +5,8 @@ title: "Vortex-induced vibration"
 authors:
   - family-names: Martins
     given-names: Flavio A. C.
+    orcid: https://orcid.org/0000-0002-1374-5760
+repository-code: "https://github.com/EngFlavioMartins/vortex-induced-vibration"
 preferred-citation:
   type: article
   title: "Three-Dimensional CFD Analysis of Damping Effects on Vortex-Induced Vibrations of 2DOF Elastically-Mounted Circular Cylinders"

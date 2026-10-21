@@ -1,5 +1,9 @@
 # Vortex-induced vibration
 
+**Vortex-induced vibration of an elastically mounted cylinder in OpenFOAM.**
+
+![Vortex cores shed alternately behind an elastically mounted cylinder, coloured by spanwise vorticity, over a plane of the same vorticity](docs/assets/render.webp)
+
 OpenFOAM case generator for vortex-induced vibration (VIV) of an elastically mounted rigid cylinder free to move in the cross-flow direction. It follows the set-up of
 
 > F. A. C. Martins and J. P. J. Avila (2019). Three-dimensional CFD analysis of damping effects on vortex-induced vibrations of 2DOF elastically-mounted circular cylinders. *Marine Structures* 65, 12–31. [doi:10.1016/j.marstruc.2019.01.005](https://doi.org/10.1016/j.marstruc.2019.01.005)
@@ -39,6 +43,23 @@ python ../../scripts/response.py .    # cross-flow amplitude and frequency
 | `src/make_case.py` | Writes mesh, dictionaries and initial fields for a given V* and ζ |
 | `scripts/response.py` | Cross-flow amplitude A*<sub>y</sub> and frequency ratio from the run log |
 | `scripts/render/` | Scripts that make the website image (ParaView `pvpython`, cmcrameri, Pillow) |
+
+## Website image
+
+```bash
+python src/make_case.py runs/vstar7-2d --vstar 7 --zeta 0.0125 --two-d
+cd runs/vstar7-2d && ./Allrun && reconstructPar -time '15:18'
+pvpython ../../scripts/render/render_wake.py . 16.669072 ../../outputs/render/viv-raw.png
+python ../../scripts/render/finish_image.py ../../outputs/render/viv-raw.png ../../outputs/render/vortex-induced-vibration
+```
+
+The run is two-dimensional, one cell across the span, so the vortex cores are uniform along the cylinder. In this coarse run the cylinder oscillates with A*<sub>y</sub> ≈ 0.66 at f<sub>y</sub>/f<sub>n,w</sub> ≈ 1.44 (`scripts/response.py`). That is below the upper-branch response of the paper's three-dimensional simulations, so treat the run as qualitative.
+
+## Citing
+
+This code follows the set-up of F. A. C. Martins and J. P. J. Avila (2019), Three-dimensional CFD analysis of damping effects on vortex-induced vibrations of 2DOF elastically-mounted circular cylinders, *Marine Structures* 65, 12–31, [doi:10.1016/j.marstruc.2019.01.005](https://doi.org/10.1016/j.marstruc.2019.01.005).
+
+GitHub's *Cite this repository* button uses [CITATION.cff](CITATION.cff).
 
 ## Licence
 
