@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+license: MIT
+message: "If you use this code, please cite the papers below."
+title: "Vortex-induced vibration"
+authors:
+  - family-names: Martins
+    given-names: Flavio A. C.
+preferred-citation:
+  type: article
+  title: "Three-Dimensional CFD Analysis of Damping Effects on Vortex-Induced Vibrations of 2DOF Elastically-Mounted Circular Cylinders"
+  authors:
+    - family-names: Martins
+      given-names: Flavio A. C.
+    - family-names: Avila
+      given-names: J. P. J.
+  journal: "Marine Structures"
+  volume: 65
+  start: 12
+  end: 31
+  year: 2019
+  doi: "10.1016/j.marstruc.2019.01.005"
+references:
+  - type: article
+    title: "Effects of the Reynolds Number and Structural Damping on Vortex-Induced Vibrations of an Elastically-Mounted Rigid Cylinder"
+    authors:
+      - family-names: Martins
+        given-names: Flavio A. C.
+      - family-names: Avila
+        given-names: J. P. J.
+    journal: "International Journal of Mechanical Sciences"
+    volume: 156
+    start: 235
+    end: 249
+    year: 2019
+    doi: "10.1016/j.ijmecsci.2019.03.024"
