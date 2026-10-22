@@ -1,5 +1,13 @@
 # Vortex-induced vibration
 
+<p align="center">
+  <a href="https://doi.org/10.1016/j.marstruc.2019.01.005"><img src="https://img.shields.io/badge/paper-10.1016%2Fj.marstruc.2019.01.005-1F6FEB" alt="paper: 10.1016/j.marstruc.2019.01.005"></a>
+  <a href="https://www.openfoam.com/"><img src="https://img.shields.io/badge/OpenFOAM-v2412-1C6EB4" alt="OpenFOAM: v2412"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" alt="python: 3.10+"></a>
+  <a href="https://github.com/EngFlavioMartins/vortex-induced-vibration/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-MIT-2E7D32" alt="license: MIT"></a>
+  <a href="https://engflaviomartins.github.io/#work-viv"><img src="https://img.shields.io/badge/website-research%20page-15212B" alt="website: research page"></a>
+</p>
+
 **An elastically mounted cylinder shaking in its own wake, in OpenFOAM.**
 
 <p align="center"><img src="docs/assets/render.webp" width="560" alt="Vortex cores shed alternately behind an elastically mounted brushed-metal cylinder, coloured by spanwise vorticity"></p>
