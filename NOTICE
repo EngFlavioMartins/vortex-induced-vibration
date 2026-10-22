@@ -1,0 +1,14 @@
+Vortex-induced vibration
+Copyright 2019–2026 Flavio A. C. Martins
+
+This product includes software developed by Flavio A. C. Martins
+(https://github.com/EngFlavioMartins/vortex-induced-vibration).
+
+Under the Apache License 2.0 (section 4d), any redistribution of this software or of a
+derivative work must include this NOTICE file.
+
+If you use this software in academic work, please cite:
+
+    Martins, F. A. C. and Avila, J. P. J. (2019). Three-dimensional CFD analysis of damping effects on vortex-induced vibrations of 2DOF elastically-mounted circular cylinders. Marine Structures 65, 12-31. https://doi.org/10.1016/j.marstruc.2019.01.005
+
+A BibTeX entry is given in README.md, and CITATION.cff provides the citation in other formats.
