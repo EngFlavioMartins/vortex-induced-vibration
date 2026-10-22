@@ -35,26 +35,31 @@ BAR = dict(width=2.2, height=16.0, column=17.0, labels=6.0)   # bar size, its co
 BACKGROUND = 18            # grey level below which a pixel counts as background
 
 
-def trim(img, pad_mm=1.0):
-    """Crop to pixels brighter than the background, plus pad_mm."""
+def trim(img, pad_mm=1.0, box_only=False):
+    """Crop to pixels brighter than the background, plus pad_mm (box_only: return the box)."""
     a = np.asarray(img.convert("L"))
     rows, cols = np.where(a > BACKGROUND)
     pad = int(pad_mm * PX_PER_MM)
     box = (max(cols.min() - pad, 0), max(rows.min() - pad, 0),
            min(cols.max() + pad + 1, img.width), min(rows.max() + pad + 1, img.height))
-    return img.crop(box)
+    return box if box_only else img.crop(box)
 
 
 def _num(v):
     return f"{v:g}".replace("-", "$-$")
 
 
-def compose(panels, stem, bar=None, layout="column", check=True):
+def compose(panels, stem, bar=None, layout="column", check=True, notes=()):
     """panels: list of (image path, label or None); layout: "column" or "row".
+    notes: point annotations on the first panel, (fx, fy, text, anchor, dx_mm, dy_mm) with
+    fx, fy fractions of the raw image from its lower-left corner. Notes are meant to sit
+    on the drawing, so the overlap check ignores them.
     bar: dict(name, vmin, vmax, title, fade=0.0, ticks=[(fraction, text), ...])."""
     stem = Path(stem)
     stem.parent.mkdir(parents=True, exist_ok=True)
-    imgs = [trim(Image.open(p).convert("RGB")) for p, _ in panels]
+    raws = [Image.open(p).convert("RGB") for p, _ in panels]
+    boxes = [trim(r, box_only=True) for r in raws]
+    imgs = [r.crop(b) for r, b in zip(raws, boxes)]
     labels = [lab for _, lab in panels]
     bar_mm = BAR["column"] if bar else 0.0
     avail = WIDTH_MM - 2 * MARGIN_MM - bar_mm
@@ -93,8 +98,9 @@ def compose(panels, stem, bar=None, layout="column", check=True):
     base.save(work / "base.png")
     body = []
     for (px, py, w, h), lab in zip(places, labels):
-        if lab:
-            body.append(rf"\node[anchor=south west,white,inner sep=0] at ({px + 0.5},{H - py + 1.2}) {{{lab}}};")
+        if lab:   # in a row, all labels share one baseline above the tallest panel
+            top = MARGIN_MM + lab_mm if layout == "row" else py
+            body.append(rf"\node[anchor=base west,white,inner sep=0] at ({px + 0.5},{H - top + 2.0}) {{{lab}}};")
     if bar:
         bw, bh = BAR["width"], BAR["height"]
         # tucked into the bottom-right corner: tick labels end at the right margin
@@ -133,11 +139,20 @@ def compose(panels, stem, bar=None, layout="column", check=True):
                        cwd=work, check=True)
         return Image.open(work / f"{name}.png").convert("RGB").resize((W_px, H_px), Image.LANCZOS)
 
-    out = latex("fig", body)
+    note_lines = []
+    if notes:
+        (px, py, w, h), (x0, y0, x1, y1), raw0 = places[0], boxes[0], raws[0]
+        for fx, fy, text, anchor, dx, dy in notes:
+            ix, iy = fx * raw0.width, (1 - fy) * raw0.height          # raw pixels from the top-left
+            mx = px + (ix - x0) / (x1 - x0) * w + dx
+            my = H - (py + (iy - y0) / (y1 - y0) * h) + dy
+            note_lines.append(rf"\node[anchor={anchor},white,inner sep=0.4mm] at ({mx:.2f},{my:.2f}) {{{text}}};")
+    out = latex("fig", body + note_lines)
     shutil.copy(work / "fig.pdf", stem.with_suffix(".pdf"))
     if check:   # every pixel the overlay changes must have been background
         plain = latex("plain", [])
-        a, b = np.asarray(plain.convert("L")).astype(int), np.asarray(out.convert("L")).astype(int)
+        furniture = latex("furniture", body) if note_lines else out
+        a, b = np.asarray(plain.convert("L")).astype(int), np.asarray(furniture.convert("L")).astype(int)
         changed = np.abs(a - b) > 40
         clash = changed & (a > BACKGROUND + 12)
         if clash.sum() > 0.002 * max(changed.sum(), 1):
