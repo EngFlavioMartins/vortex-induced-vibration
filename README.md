@@ -2,7 +2,7 @@
 
 **An elastically mounted cylinder shaking in its own wake, in OpenFOAM.**
 
-![Vortex cores shed alternately behind an elastically mounted cylinder, coloured by spanwise vorticity](docs/assets/render.webp)
+<p align="center"><img src="docs/assets/render.webp" width="560" alt="Vortex cores shed alternately behind an elastically mounted brushed-metal cylinder, coloured by spanwise vorticity"></p>
 
 One script writes a complete OpenFOAM case for a cylinder on a spring and damper, free to move across the flow, with the set-up of the papers below. The original simulations used ANSYS Fluent and are not available; this is a re-implementation for OpenFOAM v2412 (openfoam.com).
 
