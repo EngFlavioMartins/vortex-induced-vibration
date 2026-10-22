@@ -154,10 +154,10 @@ def metal(source, view, mapping="cylinder", rgb=(0.92, 0.93, 0.95), repeat=(4.0,
     plane or sphere). Returns the display."""
     import tempfile
     from pathlib import Path as _P
-    from paraview.simple import (CreateTexture, Show, SurfaceNormals, SurfaceTangents, TextureMaptoCylinder,
-                                 TextureMaptoPlane, TextureMaptoSphere, Triangulate)
+    from paraview.simple import (CreateTexture, ExtractSurface, Show, SurfaceNormals, SurfaceTangents,
+                                 TextureMaptoCylinder, TextureMaptoPlane, TextureMaptoSphere, Triangulate)
     mapper = {"cylinder": TextureMaptoCylinder, "plane": TextureMaptoPlane, "sphere": TextureMaptoSphere}[mapping]
-    tc = mapper(Input=SurfaceNormals(Input=source))
+    tc = mapper(Input=SurfaceNormals(Input=ExtractSurface(Input=source)))   # any dataset -> polygons
     if mapping == "cylinder":
         tc.PreventSeam = 0
     tangents = SurfaceTangents(Input=Triangulate(Input=tc))   # tangents need triangles
