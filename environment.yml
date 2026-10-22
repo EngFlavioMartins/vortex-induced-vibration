@@ -1,0 +1,8 @@
+# Create with:  conda env create -f environment.yml   then:  conda activate vortex-induced-vibration
+name: vortex-induced-vibration
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - "numpy>=1.24"
